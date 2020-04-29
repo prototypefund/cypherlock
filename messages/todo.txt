@@ -1,0 +1,96 @@
+
+Principle:
+Every section carries its own message type.
+	- Envelope
+		- Payload
+
+Envelope:
+	- Signed by Node
+	- Encrypted Ephemeral-Static
+		- Flag: ToLongTerm, ToShortTerm
+	- Encrypted Ephemeral:Static-Static
+	- Encrypted Ephemeral:Static-Static:Static 
+	- Encrypted contains a Nonce to be added to shared secret.
+
+- Encrypted Ephemeral-Static               -> Ephemeral-Static
+- Encrypted Ephemeral:Static-Static        -> Ephemeral-Static,  Static-Static
+- Encrypted Ephemeral:Static-Static:Static -> Ephemeral-Static1, Static-Static2
+
+
+### SetSemaphore
+
+  - Encrypt to long-term key:
+    - Semaphore Name
+    - SetFrom: Time from which the semaphore is considered set.
+    - SetTo: Time until which the semaphore is considered set.
+    - Padding.
+
+### ShareMessage
+
+  - Encrypted to share message encryption key: (SK: Ephemeral. RK: Share Message Encryption Key)
+    - Share of key
+    - Oracle: Long Term Key of Oracle
+
+### Oracle Message
+
+  - Encrypted to node short term encryption key (SK: ephemeral. RK: short term):
+    - Single Response Public Key
+    - Response public key.
+    - Encrypted to node long term encryption key: (SK: ephemeral, response public key. RK: Long Term)
+      - [0-3]Semaphore Values. If set, verify that semaphores are not set.
+      - [0-3]Semaphore Values with SetFrom/SetTo. If set, set semaphores.
+      - ValidFrom time. 0x00... to disable.
+      - ValidTo time. 0x00... to disable..
+      - Timelock public key. 0x00... to disable.
+      - Ephemeral Public key for timelock encryption. 0x00 to disable
+      - Encrypted (optional) to Timelock Key: (SK: ephemeral, response public key. RK: Timelock key)
+        - ShareMessage
+
+### Oracle Message Response
+
+  - Encrypted: (SK: Long Term, Ephemeral. RK: Single Response Public Key, Response Public Key)
+    - ShareMessage
+
+### GetConfig
+
+Return the node's configuration:
+
+  - URLs of the node.
+  - Node's long term signature key.
+  - Node's short term signature key.
+  - Node's long term encryption key.
+  - Node's short term encryption key.
+  - Node's timelock list location and range configuration.
+  - Key validity time range.
+
+*Response is additionally signed by the node's long term signature key.*
+
+### GetTimeLock
+
+Return a list of current and future timelock keys and their validity ranges.
+
+
+### Third Party Request
+Spec ToDo: Must be time sensitive (ephemeral return keys)
+- Encrypted to Third Party Long Term Key
+  - Message type: Third Party Key Decryption Request
+  - Encrypted to own Long Term Key
+    - Key to decrypt oracle messages
+-------------------------------------------------------------------------------------------------------------------
+### BSPRelay
+
+  - Encrypt to long-term key node A: (SK: Ephemeral. RK: Long Term Key)
+    - Message Type: Relay.
+    - URL and signature key of node B.
+    - BSPShare.
+    - Padding.
+
+### BSPShare 
+
+  - Encrypt to long term key node B. (SK: Ephemeral. RK: Long Term Key)
+    - Message Type: Share.
+    - List of signature keys and URLs of all nodes in BSP round.
+    - Proof of Share Image (see below).
+    - Share.
+    - Enrypted to BSP key: (BSP Key is symmetric)
+      - Oracle Message.
